@@ -2,6 +2,7 @@ import { db } from "./db";
 import {
   alerts,
   recruiterProfiles,
+  newsletterSubscriptions,
   type Alert,
   type InsertAlert,
   type RecruiterProfile,
@@ -15,7 +16,7 @@ export interface IStorage {
   // Alerts
   getAlerts(userId: string): Promise<Alert[]>;
   getAlert(id: number): Promise<Alert | undefined>;
-  createAlert(alert: InsertAlert): Promise<Alert>;
+  createAlert(alert: InsertAlert & { userId: string }): Promise<Alert>;
   updateAlert(id: number, updates: UpdateAlertRequest): Promise<Alert>;
   deleteAlert(id: number): Promise<void>;
 
@@ -38,7 +39,7 @@ export class DatabaseStorage implements IStorage {
     return alert;
   }
 
-  async createAlert(alert: InsertAlert): Promise<Alert> {
+  async createAlert(alert: InsertAlert & { userId: string }): Promise<Alert> {
     const [newAlert] = await db.insert(alerts).values(alert).returning();
     return newAlert;
   }
