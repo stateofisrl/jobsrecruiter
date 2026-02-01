@@ -1,38 +1,82 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import {
+  alerts,
+  recruiterProfiles,
+  type Alert,
+  type InsertAlert,
+  type RecruiterProfile,
+  type InsertRecruiterProfile,
+  type UpdateAlertRequest,
+  type UpdateRecruiterProfileRequest
+} from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Alerts
+  getAlerts(userId: string): Promise<Alert[]>;
+  getAlert(id: number): Promise<Alert | undefined>;
+  createAlert(alert: InsertAlert): Promise<Alert>;
+  updateAlert(id: number, updates: UpdateAlertRequest): Promise<Alert>;
+  deleteAlert(id: number): Promise<void>;
+
+  // Recruiter Profile
+  getRecruiterProfile(userId: string): Promise<RecruiterProfile | undefined>;
+  upsertRecruiterProfile(userId: string, profile: InsertRecruiterProfile): Promise<RecruiterProfile>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  // Alerts
+  async getAlerts(userId: string): Promise<Alert[]> {
+    return await db.select().from(alerts).where(eq(alerts.userId, userId));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getAlert(id: number): Promise<Alert | undefined> {
+    const [alert] = await db.select().from(alerts).where(eq(alerts.id, id));
+    return alert;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createAlert(alert: InsertAlert): Promise<Alert> {
+    const [newAlert] = await db.insert(alerts).values(alert).returning();
+    return newAlert;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateAlert(id: number, updates: UpdateAlertRequest): Promise<Alert> {
+    const [updatedAlert] = await db
+      .update(alerts)
+      .set(updates)
+      .where(eq(alerts.id, id))
+      .returning();
+    return updatedAlert;
+  }
+
+  async deleteAlert(id: number): Promise<void> {
+    await db.delete(alerts).where(eq(alerts.id, id));
+  }
+
+  // Recruiter Profile
+  async getRecruiterProfile(userId: string): Promise<RecruiterProfile | undefined> {
+    const [profile] = await db.select().from(recruiterProfiles).where(eq(recruiterProfiles.userId, userId));
+    return profile;
+  }
+
+  async upsertRecruiterProfile(userId: string, profile: InsertRecruiterProfile): Promise<RecruiterProfile> {
+    const [existing] = await db.select().from(recruiterProfiles).where(eq(recruiterProfiles.userId, userId));
+    
+    if (existing) {
+      const [updated] = await db
+        .update(recruiterProfiles)
+        .set({ ...profile })
+        .where(eq(recruiterProfiles.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(recruiterProfiles)
+        .values({ ...profile, userId })
+        .returning();
+      return created;
+    }
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
