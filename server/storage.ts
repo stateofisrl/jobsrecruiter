@@ -22,6 +22,9 @@ export interface IStorage {
   // Recruiter Profile
   getRecruiterProfile(userId: string): Promise<RecruiterProfile | undefined>;
   upsertRecruiterProfile(userId: string, profile: InsertRecruiterProfile): Promise<RecruiterProfile>;
+
+  // Newsletter
+  subscribeToNewsletter(email: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -76,6 +79,10 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  async subscribeToNewsletter(email: string): Promise<void> {
+    await db.insert(newsletterSubscriptions).values({ email }).onConflictDoNothing();
   }
 }
 

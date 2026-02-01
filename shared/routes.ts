@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertAlertSchema, insertRecruiterProfileSchema, alerts, recruiterProfiles } from './schema';
+import { insertAlertSchema, insertRecruiterProfileSchema, insertNewsletterSchema, alerts, recruiterProfiles, newsletterSubscriptions } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -65,7 +65,7 @@ export const api = {
       path: '/api/recruiter/profile',
       responses: {
         200: z.custom<typeof recruiterProfiles.$inferSelect>(),
-        404: errorSchemas.notFound, // Or null if not set
+        404: errorSchemas.notFound,
       },
     },
     update: {
@@ -74,6 +74,17 @@ export const api = {
       input: insertRecruiterProfileSchema.partial(),
       responses: {
         200: z.custom<typeof recruiterProfiles.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  newsletter: {
+    subscribe: {
+      method: 'POST' as const,
+      path: '/api/newsletter/subscribe',
+      input: insertNewsletterSchema,
+      responses: {
+        201: z.object({ message: z.string() }),
         400: errorSchemas.validation,
       },
     },

@@ -114,35 +114,35 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const input = api.recruiter.update.input.parse(req.body);
-      // We need to cast input to InsertRecruiterProfile because upsert expects full object or partial?
-      // Our upsert logic handles it, but the type might be strict.
-      // Actually, upsertRecruiterProfile expects InsertRecruiterProfile. 
-      // If we are doing partial update, we might need to fetch first or adjust storage.
-      // But for simplicty let's assume the user sends what's needed or we merge.
-      // In storage.ts, upsertRecruiterProfile takes InsertRecruiterProfile.
-      // Let's change the route to merge with existing or just pass it if it's enough.
-      // Ideally, the frontend sends the full form data or we handle partials better.
-      // For now, let's assume the user provides required fields if creating, or we construct it.
-      
-      // Better approach for upsert with partial input:
-      // If it exists, update. If not, we need all required fields.
-      // But RecruiterProfile only has companyName as required (besides userId).
-      // So if creating, companyName is needed.
       
       if (!input.companyName) {
-        // If companyName is missing, check if profile exists
         const existing = await storage.getRecruiterProfile(userId);
         if (!existing) {
            return res.status(400).json({ message: "Company name is required for new profile" });
         }
       }
 
-      // We can use a type assertion or helper to satisfy the type, knowing that storage handles it
-      // But let's be safe.
       const profileData: any = { ...input };
       const profile = await storage.upsertRecruiterProfile(userId, profileData);
       res.json(profile);
 
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Newsletter
+  app.post(api.newsletter.subscribe.path, async (req, res) => {
+    try {
+      const input = api.newsletter.subscribe.input.parse(req.body);
+      await storage.subscribeToNewsletter(input.email);
+      res.status(201).json({ message: "Successfully subscribed" });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({

@@ -26,6 +26,12 @@ export const recruiterProfiles = pgTable("recruiter_profiles", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   alerts: many(alerts),
@@ -63,11 +69,18 @@ export const insertRecruiterProfileSchema = createInsertSchema(recruiterProfiles
   createdAt: true,
 });
 
+export const insertNewsletterSchema = createInsertSchema(newsletterSubscriptions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type RecruiterProfile = typeof recruiterProfiles.$inferSelect;
 export type InsertRecruiterProfile = z.infer<typeof insertRecruiterProfileSchema>;
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
 
 // API Types
 export type CreateAlertRequest = InsertAlert;
