@@ -1,50 +1,92 @@
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Check, Bell, Search, Users, ArrowRight, Star, Globe, Shield, Zap, Mail, MessageSquare, Twitter, Linkedin, Facebook } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { Bell, Briefcase, UserPlus, Mail, MapPin, DollarSign, FileText, Star, Globe, Shield, Zap, Twitter, Linkedin, Facebook, ArrowRight } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { insertNewsletterSchema, type InsertNewsletter } from "@shared/schema";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@shared/routes";
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Landing() {
-  const { user } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<"seeking" | "posting">("seeking");
 
-  const form = useForm<InsertNewsletter>({
-    resolver: zodResolver(insertNewsletterSchema),
-    defaultValues: {
-      email: "",
-    },
-  });
+  const handleJobSeekerSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      skills: formData.get("skills") as string,
+      location: formData.get("location") as string,
+    };
+    
+    console.log("Job Seeker Submission:", data);
+    toast({
+      title: "Registration Successful!",
+      description: "Opening live chat to assist you further...",
+    });
+    e.currentTarget.reset();
+    
+    // Send form data to Smartsupp and open chat
+    setTimeout(() => {
+      if (window.smartsupp) {
+        // Set visitor name and email
+        window.smartsupp('name', data.name);
+        window.smartsupp('email', data.email);
+        
+        // Open the chat first
+        window.smartsupp('chat:open');
+        
+        // Send form data as a message after a short delay
+        setTimeout(() => {
+          const message = `Job Seeker Registration:\n\nName: ${data.name}\nEmail: ${data.email}\nSkills: ${data.skills}\nPreferred Location: ${data.location || 'Not specified'}`;
+          window.smartsupp('chat:send', message);
+        }, 800);
+      }
+    }, 500);
+  };
 
-  const subscribeMutation = useMutation({
-    mutationFn: async (data: InsertNewsletter) => {
-      const res = await apiRequest("POST", api.newsletter.subscribe.path, data);
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Subscribed!",
-        description: "You've been added to our newsletter.",
-      });
-      form.reset();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const handleJobPosterSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      companyName: formData.get("companyName") as string,
+      email: formData.get("email") as string,
+      jobTitle: formData.get("jobTitle") as string,
+      jobDescription: formData.get("jobDescription") as string,
+      location: formData.get("location") as string,
+      salary: formData.get("salary") as string,
+      requirements: formData.get("requirements") as string,
+    };
+    
+    console.log("Job Posting Submission:", data);
+    toast({
+      title: "Job Posted Successfully!",
+      description: "Opening live chat to assist you further...",
+    });
+    e.currentTarget.reset();
+    
+    // Send form data to Smartsupp and open chat
+    setTimeout(() => {
+      if (window.smartsupp) {
+        // Set visitor name and email
+        window.smartsupp('name', data.companyName);
+        window.smartsupp('email', data.email);
+        
+        // Open the chat first
+        window.smartsupp('chat:open');
+        
+        // Send form data as a message after a short delay
+        setTimeout(() => {
+          const message = `Job Posting Submission:\n\nCompany: ${data.companyName}\nContact Email: ${data.email}\nJob Title: ${data.jobTitle}\nLocation: ${data.location}\nSalary: ${data.salary || 'Not specified'}\n\nDescription:\n${data.jobDescription}\n\nRequirements:\n${data.requirements}`;
+          window.smartsupp('chat:send', message);
+        }, 800);
+      }
+    }, 500);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -55,28 +97,13 @@ export default function Landing() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
               <Bell className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-xl tracking-tight">RecruiterAlert</span>
+            <span className="font-display font-bold text-xl tracking-tight">Jobs Recruiter Alert</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+            <a href="#get-started" className="hover:text-primary transition-colors">Get Started</a>
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
             <a href="#testimonials" className="hover:text-primary transition-colors">Testimonials</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
-          </div>
-          <div className="flex items-center gap-4">
-            {user ? (
-              <Link href="/dashboard">
-                <Button data-testid="link-dashboard">Go to Dashboard</Button>
-              </Link>
-            ) : (
-              <Button 
-                onClick={() => window.location.href = "/api/login"} 
-                size="default" 
-                className="font-semibold shadow-md"
-                data-testid="button-login"
-              >
-                Login
-              </Button>
-            )}
           </div>
         </div>
       </nav>
@@ -91,23 +118,22 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
-              <Zap className="w-3 h-3" /> New: Instant SMS Alerts
+              <Zap className="w-3 h-3" /> New: Daily Job Alerts
             </div>
             <h1 className="text-5xl md:text-7xl font-display font-extrabold tracking-tight leading-[1.05]">
-              Hire faster with <br />
-              <span className="text-primary italic">Precision</span> Alerts
+              Find Your Dream Job <br />
+              <span className="text-primary italic">Today</span>
             </h1>
             <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
-              The only platform built specifically for headhunters. Get notified the second a top-tier candidate updates their status.
+              Connect job seekers with opportunities and help employers find top talent. Get started in seconds.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 size="lg" 
-                className="h-14 px-8 text-lg shadow-xl shadow-primary/20 hover-elevate active-elevate-2"
-                onClick={() => window.location.href = "/api/login"}
-                data-testid="button-get-started"
+                className="h-14 px-8 text-lg shadow-xl shadow-primary/20"
+                onClick={() => document.getElementById('get-started')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Start Sourcing Free <ArrowRight className="ml-2 w-5 h-5" />
+                Get Started Free <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
             
@@ -120,7 +146,7 @@ export default function Landing() {
                 ))}
               </div>
               <p className="text-sm text-muted-foreground">
-                Joined by <span className="font-bold text-foreground">500+</span> top agencies
+                Joined by <span className="font-bold text-foreground">500+</span> job seekers & employers
               </p>
             </div>
           </div>
@@ -139,25 +165,25 @@ export default function Landing() {
                 
                 <div className="p-6 space-y-6">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-sm">Active Monitoring</h4>
+                    <h4 className="font-bold text-sm">Recent Jobs</h4>
                     <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Live</span>
                   </div>
                   <div className="space-y-4">
                     {[
-                      { name: "Sarah J.", role: "Senior Architect", status: "Active" },
-                      { name: "Mike R.", role: "Staff Engineer", status: "Looking" },
-                    ].map((candidate, i) => (
+                      { title: "Senior Developer", company: "TechCorp", salary: "$120k" },
+                      { title: "Product Manager", company: "StartupXYZ", salary: "$95k" },
+                    ].map((job, i) => (
                       <div key={i} className="p-4 rounded-xl border border-border/50 bg-muted/10 hover-elevate cursor-default">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                            {candidate.name[0]}
+                            {job.company[0]}
                           </div>
                           <div>
-                            <p className="font-bold text-sm">{candidate.name}</p>
-                            <p className="text-xs text-muted-foreground">{candidate.role}</p>
+                            <p className="font-bold text-sm">{job.title}</p>
+                            <p className="text-xs text-muted-foreground">{job.company}</p>
                           </div>
                           <div className="ml-auto text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                            {candidate.status}
+                            {job.salary}
                           </div>
                         </div>
                       </div>
@@ -170,56 +196,233 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Get Started Forms Section */}
+      <section id="get-started" className="py-20 px-4 bg-muted/20">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12 space-y-4">
+            <h2 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight">
+              Get Started Today
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Looking for a job or hiring talent? Choose your path below.
+            </p>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "seeking" | "posting")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8 h-auto">
+              <TabsTrigger value="seeking" className="text-base md:text-lg py-4 gap-2">
+                <UserPlus className="w-5 h-5" />
+                <span>Looking for Jobs</span>
+              </TabsTrigger>
+              <TabsTrigger value="posting" className="text-base md:text-lg py-4 gap-2">
+                <Briefcase className="w-5 h-5" />
+                <span>Post a Job</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Job Seeker Form */}
+            <TabsContent value="seeking">
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Get Daily Job Alerts</CardTitle>
+                  <p className="text-muted-foreground">
+                    Fill out the form below and we'll send you daily emails with job opportunities matching your profile.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleJobSeekerSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="seeker-name">Full Name *</Label>
+                      <Input 
+                        id="seeker-name" 
+                        name="name" 
+                        placeholder="John Doe" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="seeker-email">Email Address *</Label>
+                      <Input 
+                        id="seeker-email" 
+                        name="email" 
+                        type="email" 
+                        placeholder="john@example.com" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="seeker-skills">Skills & Expertise *</Label>
+                      <Input 
+                        id="seeker-skills" 
+                        name="skills" 
+                        placeholder="e.g., React, Node.js, Project Management" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="seeker-location">Preferred Location</Label>
+                      <Input 
+                        id="seeker-location" 
+                        name="location" 
+                        placeholder="e.g., Remote, New York, London" 
+                      />
+                    </div>
+
+                    <Button type="submit" size="lg" className="w-full">
+                      <Mail className="w-5 h-5 mr-2" />
+                      Start Receiving Daily Job Alerts
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Job Poster Form */}
+            <TabsContent value="posting">
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Post a Job Opening</CardTitle>
+                  <p className="text-muted-foreground">
+                    Share your job opportunity with qualified candidates.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleJobPosterSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="poster-company">Company Name *</Label>
+                      <Input 
+                        id="poster-company" 
+                        name="companyName" 
+                        placeholder="Acme Inc." 
+                        required 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="poster-email">Contact Email *</Label>
+                      <Input 
+                        id="poster-email" 
+                        name="email" 
+                        type="email" 
+                        placeholder="hr@acme.com" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="poster-title">Job Title *</Label>
+                      <Input 
+                        id="poster-title" 
+                        name="jobTitle" 
+                        placeholder="Senior Software Engineer" 
+                        required 
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="poster-description">Job Description *</Label>
+                      <Textarea 
+                        id="poster-description" 
+                        name="jobDescription" 
+                        placeholder="Describe the role, responsibilities, and what you're looking for..."
+                        rows={5}
+                        required 
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="poster-location">Location *</Label>
+                        <Input 
+                          id="poster-location" 
+                          name="location" 
+                          placeholder="Remote, New York, etc." 
+                          required 
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="poster-salary">Salary Range</Label>
+                        <Input 
+                          id="poster-salary" 
+                          name="salary" 
+                          placeholder="$80k - $120k" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="poster-requirements">Requirements & Qualifications *</Label>
+                      <Textarea 
+                        id="poster-requirements" 
+                        name="requirements" 
+                        placeholder="List required skills, experience, education, etc."
+                        rows={4}
+                        required 
+                      />
+                    </div>
+
+                    <Button type="submit" size="lg" className="w-full">
+                      <Briefcase className="w-5 h-5 mr-2" />
+                      Submit Job Posting
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </section>
+
       {/* Bento Grid Features */}
-      <section id="features" className="py-24 bg-muted/30">
+      <section id="features" className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-display font-bold tracking-tight">Everything you need to source faster</h2>
+            <h2 className="text-3xl md:text-5xl font-display font-bold tracking-tight">Everything you need</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Powering the next generation of recruitment agencies with modern tools.
+              Connecting job seekers with employers through smart technology.
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 bg-card p-8 rounded-3xl border border-border/50 shadow-sm hover-elevate group">
               <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Globe className="w-6 h-6 text-blue-600" />
+                <Mail className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Global Talent Search</h3>
+              <h3 className="text-2xl font-bold mb-3">Daily Job Alerts</h3>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Connect with major job boards and professional networks across the globe. Our spider engine monitors candidate updates 24/7 so you don't have to.
+                Job seekers receive personalized email alerts every day with opportunities matching their skills and preferences.
               </p>
             </div>
             <div className="bg-primary p-8 rounded-3xl text-primary-foreground shadow-xl hover-elevate">
               <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mb-6">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">GDPR Compliant</h3>
+              <h3 className="text-2xl font-bold mb-3">Secure & Private</h3>
               <p className="text-primary-foreground/80 leading-relaxed">
-                Source with confidence knowing all candidate data is handled with strict privacy standards.
+                Your data is protected with industry-standard security measures.
               </p>
             </div>
             <div className="bg-card p-8 rounded-3xl border border-border/50 shadow-sm hover-elevate group">
               <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Zap className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Instant Sync</h3>
-              <p className="text-muted-foreground text-sm">Real-time alerts directly to your phone.</p>
+              <h3 className="text-xl font-bold mb-2">Instant Posting</h3>
+              <p className="text-muted-foreground text-sm">Get your job opening listed within minutes.</p>
             </div>
             <div className="md:col-span-2 bg-card p-8 rounded-3xl border border-border/50 shadow-sm hover-elevate group">
               <div className="flex gap-8 items-center h-full">
                 <div className="flex-1">
                   <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <Users className="w-6 h-6 text-green-600" />
+                    <Briefcase className="w-6 h-6 text-green-600" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-3">Team Collaboration</h3>
+                  <h3 className="text-2xl font-bold mb-3">Quality Matches</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Share pipelines, leave comments, and track candidate status across your entire recruitment team.
+                    Our platform connects the right candidates with the right opportunities for better hiring outcomes.
                   </p>
-                </div>
-                <div className="hidden lg:flex gap-2">
-                  <div className="w-32 h-40 bg-muted/50 rounded-2xl border border-border/50 animate-pulse" />
-                  <div className="w-32 h-40 bg-muted/50 rounded-2xl border border-border/50 translate-y-8 animate-pulse" />
                 </div>
               </div>
             </div>
@@ -228,12 +431,12 @@ export default function Landing() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-24 px-4">
+      <section id="testimonials" className="py-24 px-4 bg-muted/30">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
             <div>
-              <h2 className="text-3xl md:text-5xl font-display font-bold tracking-tight mb-4">Trusted by industry leaders</h2>
-              <p className="text-muted-foreground text-lg">Hear from recruiters who have transformed their workflow.</p>
+              <h2 className="text-3xl md:text-5xl font-display font-bold tracking-tight mb-4">Trusted by job seekers & employers</h2>
+              <p className="text-muted-foreground text-lg">See what our users have to say.</p>
             </div>
             <div className="flex gap-2">
               <div className="flex items-center gap-1 text-yellow-500">
@@ -250,22 +453,22 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                text: "RecruiterAlert reduced our time-to-hire by 40%. It's literally like having a sourcing assistant that never sleeps.",
-                author: "James Wilson",
-                role: "Director @ TalentSource",
-                avatar: "https://i.pravatar.cc/150?u=james"
+                text: "Jobs Recruiter Alert helped me land my dream job in just 2 weeks! The daily alerts were spot on.",
+                author: "Sarah Chen",
+                role: "Software Engineer",
+                avatar: "https://i.pravatar.cc/150?u=sarah"
               },
               {
-                text: "The instant notifications are a game changer. We reached out to a candidate 5 minutes after they updated their status and signed them.",
-                author: "Elena Rodriguez",
-                role: "Senior Partner @ HeadHunter Pro",
-                avatar: "https://i.pravatar.cc/150?u=elena"
+                text: "As an employer, posting jobs here is incredibly easy. We found qualified candidates within days.",
+                author: "Michael Ross",
+                role: "HR Manager @ TechCorp",
+                avatar: "https://i.pravatar.cc/150?u=michael"
               },
               {
-                text: "Finally, a recruiter tool that doesn't feel like it was built in 1995. Clean, fast, and incredibly intuitive UI.",
-                author: "Mark Thompson",
-                role: "Lead Recruiter @ TechStack",
-                avatar: "https://i.pravatar.cc/150?u=mark"
+                text: "The best job alert platform I've used. Simple, effective, and the emails are actually relevant!",
+                author: "Emma Thompson",
+                role: "Marketing Specialist",
+                avatar: "https://i.pravatar.cc/150?u=emma"
               }
             ].map((t, i) => (
               <Card key={i} className="bg-card hover-elevate transition-all border-none shadow-lg">
@@ -288,50 +491,61 @@ export default function Landing() {
       </section>
 
       {/* Newsletter Section */}
-      <section className="py-24 px-4 bg-primary text-primary-foreground">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
-            <Mail className="w-8 h-8 text-white" />
+      <section className="py-24 px-4 bg-gradient-to-b from-primary/5 to-background">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-8">
+            <h2 className="text-3xl md:text-5xl font-display font-bold tracking-tight mb-4">
+              Stay Updated
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Subscribe to our newsletter for the latest job opportunities and career tips.
+            </p>
           </div>
-          <h2 className="text-3xl md:text-5xl font-display font-bold tracking-tight">Stay ahead of the curve</h2>
-          <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto">
-            Get weekly insights on recruitment trends, Boolean search tips, and new feature announcements.
-          </p>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => subscribeMutation.mutate(data))} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="flex-1 space-y-0">
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter your email" 
-                        className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:ring-white/30"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button 
-                type="submit" 
-                variant="secondary" 
-                className="h-12 px-8 font-bold"
-                disabled={subscribeMutation.isPending}
-                data-testid="button-newsletter-subscribe"
-              >
-                {subscribeMutation.isPending ? "Subscribing..." : "Subscribe Now"}
-              </Button>
-            </form>
-          </Form>
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const email = formData.get("email") as string;
+              console.log("Newsletter Subscription:", email);
+              toast({
+                title: "Subscribed Successfully!",
+                description: "Opening live chat to personalize your preferences...",
+              });
+              e.currentTarget.reset();
+              setTimeout(() => {
+                if (window.smartsupp) {
+                  // Set visitor email
+                  window.smartsupp('email', email);
+                  
+                  // Open the chat first
+                  window.smartsupp('chat:open');
+                  
+                  // Send newsletter subscription as a message after a short delay
+                  setTimeout(() => {
+                    const message = `Newsletter Subscription:\n\nEmail: ${email}`;
+                    window.smartsupp('chat:send', message);
+                  }, 800);
+                }
+              }, 500);
+            }}
+            className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto"
+          >
+            <Input 
+              type="email" 
+              name="email"
+              placeholder="Enter your email" 
+              className="h-14 text-lg"
+              required
+            />
+            <Button type="submit" size="lg" className="h-14 px-8 text-lg whitespace-nowrap">
+              Subscribe <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </form>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-24 px-4 bg-muted/20">
+      <section id="faq" className="py-24 px-4 bg-background">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-display font-bold">Frequently Asked Questions</h2>
@@ -339,20 +553,20 @@ export default function Landing() {
           <Accordion type="single" collapsible className="w-full">
             {[
               {
-                q: "How fast are the alerts?",
-                a: "Our engine polls sources every 60 seconds. Depending on the frequency you choose, you can receive alerts almost instantly."
+                q: "How do the daily job alerts work?",
+                a: "Once you submit the job seeker form, our system will match your skills and preferences with available job postings and send you a daily email with the best opportunities."
               },
               {
-                q: "Which job boards do you monitor?",
-                a: "We monitor over 50+ major job boards, LinkedIn, and niche professional networks specifically for the tech and finance industries."
+                q: "Is there a fee to post jobs?",
+                a: "Currently, job posting is free for all employers. We may introduce premium features in the future."
               },
               {
-                q: "Can I cancel my plan anytime?",
-                a: "Yes, you can cancel or pause your subscription at any time from your dashboard settings."
+                q: "Can I update my preferences later?",
+                a: "Yes, you can update your job preferences anytime by submitting the form again with your new information."
               },
               {
-                q: "Do you offer enterprise pricing?",
-                a: "Yes, for teams larger than 10 recruiters, we offer custom enterprise plans with additional features like SSO and dedicated account managers."
+                q: "How quickly will my job posting go live?",
+                a: "Job postings are typically reviewed and published within 24 hours of submission."
               }
             ].map((item, i) => (
               <AccordionItem key={i} value={`item-${i}`} className="border-border/50">
@@ -368,75 +582,18 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-4 text-center space-y-8">
-        <h2 className="text-4xl md:text-6xl font-display font-bold tracking-tight">Ready to close more roles?</h2>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Join 500+ recruitment agencies who use RecruiterAlert to stay ahead of the competition.
-        </p>
-        <Button 
-          size="lg" 
-          className="h-16 px-12 text-xl font-bold shadow-2xl shadow-primary/30 hover-elevate active-elevate-2"
-          onClick={() => window.location.href = "/api/login"}
-          data-testid="button-cta-bottom"
-        >
-          Get Started For Free
-        </Button>
-      </section>
-
       {/* Footer */}
       <footer className="py-20 border-t border-border/40 bg-card">
-        <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12">
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Bell className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-display font-bold text-xl tracking-tight">RecruiterAlert</span>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <Bell className="w-5 h-5 text-primary-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Empowering recruitment teams with real-time talent insights and automated sourcing workflows.
-            </p>
-            <div className="flex gap-4">
-              <Twitter className="w-5 h-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-              <Linkedin className="w-5 h-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-              <Facebook className="w-5 h-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-            </div>
+            <span className="font-display font-bold text-xl">Jobs Recruiter Alert</span>
           </div>
-          
-          <div>
-            <h4 className="font-bold mb-6">Product</h4>
-            <ul className="space-y-4 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-primary transition-colors">Pricing</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Features</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Integrations</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Changelog</a></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-bold mb-6">Company</h4>
-            <ul className="space-y-4 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-bold mb-6">Support</h4>
-            <ul className="space-y-4 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-primary transition-colors">Help Center</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Documentation</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">API Status</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
-            </ul>
-          </div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 mt-20 pt-8 border-t border-border/40 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Jobs Recruiter Alert Inc. All rights reserved. Built with precision for the modern recruiter.</p>
+          <p className="text-sm text-muted-foreground text-center">
+            &copy; {new Date().getFullYear()} Jobs Recruiter Alert Inc. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>

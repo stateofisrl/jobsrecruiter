@@ -1,22 +1,28 @@
 import type { Express } from "express";
 import type { Server } from "http";
-import { storage } from "./storage";
-import { api } from "@shared/routes";
-import { z } from "zod";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+// import { storage } from "./storage";
+// import { api } from "@shared/routes";
+// import { z } from "zod";
+// import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup Auth
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  // Setup Auth - DISABLED FOR LOCAL DEV
+  // await setupAuth(app);
+  // registerAuthRoutes(app);
 
-  // Protected Routes Middleware
+  // Stub auth route for local development without authentication
+  app.get("/api/auth/user", async (req, res) => {
+    res.status(401).json(null);
+  });
+
+  // Protected Routes Middleware - DISABLED FOR LOCAL DEV
   // We can apply it to specific routes or groups
   
   // Alerts
+  /*
   app.get(api.alerts.list.path, isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     const alerts = await storage.getAlerts(userId);
@@ -99,8 +105,10 @@ export async function registerRoutes(
     await storage.deleteAlert(alertId);
     res.status(204).send();
   });
+  */
 
-  // Recruiter Profile
+  // Recruiter Profile - DISABLED FOR LOCAL DEV
+  /*
   app.get(api.recruiter.get.path, isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     const profile = await storage.getRecruiterProfile(userId);
@@ -153,6 +161,7 @@ export async function registerRoutes(
       throw err;
     }
   });
+  */
 
   return httpServer;
 }
